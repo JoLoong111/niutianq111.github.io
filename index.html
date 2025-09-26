@@ -1,1 +1,2046 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>牛天齐的记录台</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --secondary: #f8f9fa;
+            --text: #202124;
+            --light-text: #5f6368;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --substitution: #9c27b0; /* 新增换人按钮颜色 */
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--text);
+            padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); /* 兼容安全区 */
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 0;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), #0d5bb5);
+            color: white;
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .score-display {
+            background: white;
+            padding: 20px 15px;
+            text-align: center;
+            margin: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        
+        .score-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+            margin-bottom: 10px;
+        }
+        
+        .team-score {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .team-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: var(--light-text);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+            color: var(--light-text);
+            font-size: 13px;
+        }
+        
+        .main-content {
+            padding: 15px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            color: var(--primary);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+        
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .player-card {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border: 1px solid #eaeaea;
+        }
+        
+        .player-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .player-card.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .player-card.playing {
+            border-left: 4px solid var(--success);
+        }
+        
+        .player-number {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .player-name {
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .action-btn {
+            padding: 12px 8px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            width: 100%; /* 窄屏占满整行 */
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .action-btn:active {
+            transform: translateY(0);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+            color: var(--text);
+        }
+        
+        .btn-substitution {
+            background-color: var(--substitution);
+            color: white;
+        }
+        
+        .btn-small {
+            padding: 8px 6px;
+            font-size: 12px;
+        }
+        
+        .opponent-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid #eaeaea;
+        }
+        
+        .events-log {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 13px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .event-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .event-item:last-child {
+            border-bottom: none;
+        }
+        
+        .event-undo {
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #f0f0f0;
+            transition: all 0.2s;
+        }
+        
+        .event-undo:hover {
+            background: #e0e0e0;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap; /* 自动换行，防止窄屏溢出 */
+            justify-content: space-between;
+            background: white;
+            padding: 15px env(safe-area-inset-left,0px) 15px env(safe-area-inset-right,0px);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            border-top: 1px solid #eaeaea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .player-form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border 0.2s;
+        }
+        
+        .form-group input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        }
+        
+        .player-list {
+            margin-top: 20px;
+        }
+        
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .player-status {
+            font-size: 11px;
+            color: var(--light-text);
+            margin-top: 3px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: modalAppear 0.3s ease;
+        }
+        
+        @keyframes modalAppear {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .player-stats {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--light-text);
+        }
+        
+        .undo-btn {
+            background: var(--warning);
+            color: var(--text);
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .undo-btn:hover {
+            background: #e0a800;
+        }
 
+        /* ----------- 小屏适配 ----------- */
+        @media (max-width: 420px) {
+            .players-grid {
+                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+                gap: 8px;
+            }
+            .team-score {
+                font-size: 28px;
+            }
+            .player-card {
+                padding: 10px 6px;
+            }
+            .action-btn {
+                font-size: 12px;
+                padding: 10px 6px;
+            }
+            header {
+                padding: 12px 10px;
+            }
+        }
+        
+        .shot-options {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .shot-option {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .shot-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .shot-made {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .shot-missed {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .rebound-options {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .rebound-option {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: var(--primary);
+            color: white;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .rebound-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .reset-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .reset-btn:hover {
+            background: #c82333;
+        }
+        
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-btn {
+                padding: 14px 8px;
+                font-size: 14px;
+            }
+            
+            .btn-small {
+                padding: 10px 6px;
+                font-size: 13px;
+            }
+            
+            /* 换人按钮在移动端更显眼 */
+            #substitution-btn {
+                background-color: var(--substitution);
+                font-weight: bold;
+                border: 2px solid #7b1fa2;
+            }
+            
+            .players-grid {
+                grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+                gap: 12px;
+            }
+            
+            .player-card {
+                padding: 14px 8px;
+            }
+            
+            .player-number {
+                font-size: 20px;
+            }
+            
+            .player-name {
+                font-size: 13px;
+            }
+            
+            /* 移动端布局优化，减少滚动 */
+            .main-content {
+                padding: 12px;
+            }
+            
+            .score-display {
+                margin: 8px;
+                padding: 15px 10px;
+            }
+            
+            .team-score {
+                font-size: 32px;
+            }
+            
+            .opponent-section {
+                margin: 15px 0;
+                padding: 12px;
+            }
+            
+            .events-log {
+                max-height: 150px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .players-grid {
+                grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+            }
+            
+            .action-btn {
+                padding: 16px 8px;
+                font-size: 15px;
+            }
+            
+            .controls {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            .controls .action-btn {
+                flex: 1;
+                min-width: 45%;
+                font-size: 13px;
+                padding: 12px 5px;
+            }
+            
+            .score-container {
+                gap: 15px;
+            }
+            
+            .team-score {
+                font-size: 28px;
+            }
+        }
+        
+        @media (max-width: 360px) {
+            .players-grid {
+                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            }
+            
+            .player-number {
+                font-size: 18px;
+            }
+            
+            .player-name {
+                font-size: 12px;
+            }
+            
+            .main-content {
+                padding: 10px;
+            }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: var(--light-text);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo">
+                    <h1>统院男篮记录台</h1>
+                </div>
+                <div class="game-status">
+                    <span>第1节</span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="score-display">
+            <button class="reset-btn" onclick="showResetModal()">重置数据</button>
+            <div class="score-container">
+                <div>
+                    <div class="team-name">统院男篮</div>
+                    <div class="team-score" id="home-score">0</div>
+                </div>
+                <div style="font-size: 28px; color: var(--primary);">:</div>
+                <div>
+                    <div class="team-name">菜鸟</div>
+                    <div class="team-score" id="away-score">0</div>
+                </div>
+            </div>
+            <div class="game-info">
+                <span>第 <span id="quarter">1</span> 节</span>
+                <button class="undo-btn" onclick="undoLastAction()">撤销上一步</button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <!-- 比赛记录标签 -->
+            <div class="tab-content active" id="record-tab">
+                <div class="section-title">
+                    <span>选择球员</span>
+                    <span id="playing-count">场上: 5/5</span>
+                </div>
+                <div class="players-grid" id="players-container">
+                    <!-- 球员将通过JS动态添加 -->
+                </div>
+                
+                <div class="section-title">我方得分</div>
+                <div class="actions-grid">
+                    <button class="action-btn btn-primary" onclick="showShotModal(2)">2分球</button>
+                    <button class="action-btn btn-primary" onclick="showShotModal(3)">3分球</button>
+                    <button class="action-btn btn-primary" onclick="showFreeThrowModal()">罚球</button>
+                </div>
+                
+                <div class="section-title">其他数据</div>
+                <div class="actions-grid">
+                    <button class="action-btn btn-primary btn-small" onclick="showReboundModal('home')">篮板</button>
+                    <button class="action-btn btn-primary btn-small" onclick="recordStat('assist')">助攻</button>
+                    <button class="action-btn btn-primary btn-small" onclick="recordStat('steal')">抢断</button>
+                    <button class="action-btn btn-primary btn-small" onclick="recordStat('block')">盖帽</button>
+                    <button class="action-btn btn-primary btn-small" onclick="recordStat('turnover')">失误</button>
+                    <button class="action-btn btn-primary btn-small" onclick="recordStat('foul')">犯规</button>
+                    <button class="action-btn btn-substitution btn-small" id="substitution-btn" onclick="showSubstitutionModal()">换人</button>
+                </div>
+                
+                <div class="opponent-section">
+                    <div class="section-title">菜鸟对手数据</div>
+                    <div class="actions-grid">
+                        <button class="action-btn btn-primary" onclick="showOpponentShotModal(2)">对手2分</button>
+                        <button class="action-btn btn-primary" onclick="showOpponentShotModal(3)">对手3分</button>
+                        <button class="action-btn btn-primary" onclick="showOpponentFreeThrowModal()">对手罚球</button>
+                        <button class="action-btn btn-primary btn-small" onclick="showReboundModal('away')">对手篮板</button>
+                        <button class="action-btn btn-primary btn-small" onclick="recordOpponentStat('turnover')">对手失误</button>
+                    </div>
+                </div>
+                
+                <div class="section-title">事件记录</div>
+                <div class="events-log" id="events-container">
+                    <div class="empty-state">暂无事件记录</div>
+                </div>
+            </div>
+            
+            <!-- 球员管理标签 -->
+            <div class="tab-content" id="manage-tab">
+                <div class="section-title">添加球员</div>
+                <div class="player-form">
+                    <div class="form-group">
+                        <label for="player-name">球员姓名</label>
+                        <input type="text" id="player-name" placeholder="输入球员姓名">
+                    </div>
+                    <div class="form-group">
+                        <label for="player-number">球衣号码</label>
+                        <input type="number" id="player-number" placeholder="输入球衣号码" min="0" max="99">
+                    </div>
+                    <button class="action-btn btn-primary" onclick="addPlayer()">添加球员</button>
+                    <button class="action-btn btn-warning" onclick="addDefaultPlayers()">添加默认球员</button>
+                </div>
+                
+                <div class="section-title">球员列表</div>
+                <div class="player-list" id="players-list">
+                    <!-- 球员列表将通过JS动态添加 -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="action-btn btn-primary" onclick="switchTab('record')">比赛记录</button>
+            <button class="action-btn btn-primary" onclick="switchTab('manage')">球员管理</button>
+            <button class="action-btn btn-primary" onclick="exportToExcel()">导出Excel</button>
+            <button class="action-btn btn-primary" onclick="nextQuarter()">下一节</button>
+        </div>
+    </div>
+
+    <!-- 各种模态框 -->
+    <div class="modal" id="substitution-modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px;">换人调整</h3>
+            
+            <div style="margin-bottom: 15px;">
+                <h4>选择下场球员</h4>
+                <div id="out-players" class="players-grid">
+                    <!-- 下场球员将通过JS动态添加 -->
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <h4>选择上场球员</h4>
+                <div id="in-players" class="players-grid">
+                    <!-- 上场球员将通过JS动态添加 -->
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="action-btn btn-primary" onclick="confirmSubstitution()" style="flex: 1;">确认换人</button>
+                <button class="action-btn btn-danger" onclick="closeModal('substitution-modal')" style="flex: 1;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 投篮模态框 -->
+    <div class="modal" id="shot-modal">
+        <div class="modal-content">
+            <h3 id="shot-modal-title" style="margin-bottom: 15px;">投篮记录</h3>
+            <p id="shot-modal-description">选择投篮结果：</p>
+            
+            <div class="shot-options">
+                <div class="shot-option shot-made" onclick="confirmShot(true)">命中</div>
+                <div class="shot-option shot-missed" onclick="confirmShot(false)">投丢</div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="action-btn btn-danger" onclick="closeModal('shot-modal')" style="flex: 1;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 罚球模态框 -->
+    <div class="modal" id="free-throw-modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px;">罚球记录</h3>
+            <p>选择罚球结果：</p>
+            
+            <div class="shot-options">
+                <div class="shot-option shot-made" onclick="confirmFreeThrow(true)">命中</div>
+                <div class="shot-option shot-missed" onclick="confirmFreeThrow(false)">投丢</div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="action-btn btn-danger" onclick="closeModal('free-throw-modal')" style="flex: 1;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 篮板模态框 -->
+    <div class="modal" id="rebound-modal">
+        <div class="modal-content">
+            <h3 id="rebound-modal-title" style="margin-bottom: 15px;">篮板记录</h3>
+            <p id="rebound-modal-description">选择篮板类型：</p>
+            
+            <div class="rebound-options">
+                <div class="rebound-option" onclick="confirmRebound('offensive')">进攻篮板</div>
+                <div class="rebound-option" onclick="confirmRebound('defensive')">防守篮板</div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="action-btn btn-danger" onclick="closeModal('rebound-modal')" style="flex: 1;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 对手投篮模态框 -->
+    <div class="modal" id="opponent-shot-modal">
+        <div class="modal-content">
+            <h3 id="opponent-shot-modal-title" style="margin-bottom: 15px;">对手投篮记录</h3>
+            <p id="opponent-shot-modal-description">选择投篮结果：</p>
+            
+            <div class="shot-options">
+                <div class="shot-option shot-made" onclick="confirmOpponentShot(true)">命中</div>
+                <div class="shot-option shot-missed" onclick="confirmOpponentShot(false)">投丢</div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="action-btn btn-danger" onclick="closeModal('opponent-shot-modal')" style="flex: 1;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 对手罚球模态框 -->
+    <div class="modal" id="opponent-free-throw-modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px;">对手罚球记录</h3>
+            <p>选择罚球结果：</p>
+            
+            <div class="shot-options">
+                <div class="shot-option shot-made" onclick="confirmOpponentFreeThrow(true)">命中</div>
+                <div class="shot-option shot-missed" onclick="confirmOpponentFreeThrow(false)">投丢</div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="action-btn btn-danger" onclick="closeModal('opponent-free-throw-modal')" style="flex: 1;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重置确认模态框 -->
+    <div class="modal" id="reset-modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px;">重置确认</h3>
+            <p>确定要清空所有数据吗？此操作不可撤销！</p>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="action-btn btn-danger" onclick="resetData()" style="flex: 1;">确认重置</button>
+                <button class="action-btn btn-primary" onclick="closeModal('reset-modal')" style="flex: 1;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化数据
+        let players = [];
+        let selectedPlayerId = null;
+        let homeScore = 0;
+        let awayScore = 0;
+        let quarter = 1;
+        let events = [];
+        let actionHistory = [];
+        
+        // 投篮数据
+        let shotData = {};
+        let opponentShotData = {
+            twoAttempts: 0,
+            twoMade: 0,
+            threeAttempts: 0,
+            threeMade: 0,
+            fta: 0,
+            ftm: 0
+        };
+        
+        // 篮板数据
+        let reboundData = {
+            home: { offensive: 0, defensive: 0 },
+            away: { offensive: 0, defensive: 0 }
+        };
+        
+        // 对手数据
+        let opponentData = {
+            points: 0,
+            rebounds: { offensive: 0, defensive: 0 },
+            turnovers: 0,
+            fouls: 0
+        };
+        
+        // 模态框相关变量
+        let currentShotPoints = 0;
+        let currentReboundTeam = '';
+        
+        // 换人相关变量
+        let substitutionOutPlayerId = null;
+        let substitutionInPlayerId = null;
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            renderPlayers();
+            renderPlayerList();
+            updatePlayingCount();
+            updateSubstitutionButton();
+        });
+        
+        // 加载数据
+        function loadData() {
+            const savedData = localStorage.getItem('basketballStats');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                players = data.players || [];
+                selectedPlayerId = data.selectedPlayerId || null;
+                homeScore = data.homeScore || 0;
+                awayScore = data.awayScore || 0;
+                quarter = data.quarter || 1;
+                events = data.events || [];
+                shotData = data.shotData || {};
+                opponentShotData = data.opponentShotData || {
+                    twoAttempts: 0,
+                    twoMade: 0,
+                    threeAttempts: 0,
+                    threeMade: 0,
+                    fta: 0,
+                    ftm: 0
+                };
+                reboundData = data.reboundData || { home: { offensive: 0, defensive: 0 }, away: { offensive: 0, defensive: 0 } };
+                opponentData = data.opponentData || { points: 0, rebounds: { offensive: 0, defensive: 0 }, turnovers: 0, fouls: 0 };
+                actionHistory = data.actionHistory || [];
+                
+                // 更新显示
+                updateScoreDisplay();
+                document.getElementById('quarter').textContent = quarter;
+                document.querySelector('.game-status span').textContent = `第${quarter}节`;
+                renderEvents();
+            } else {
+                // 如果没有保存的数据，初始化默认球员
+                initializeDefaultPlayers();
+            }
+        }
+        
+        // 保存数据
+        function saveData() {
+            const data = {
+                players,
+                selectedPlayerId,
+                homeScore,
+                awayScore,
+                quarter,
+                events,
+                shotData,
+                opponentShotData,
+                reboundData,
+                opponentData,
+                actionHistory
+            };
+            localStorage.setItem('basketballStats', JSON.stringify(data));
+        }
+        
+        // 初始化默认球员
+        function initializeDefaultPlayers() {
+            // 您提供的球员列表
+            const defaultPlayers = [
+                { name: "牛天齐", number: 91 },
+                { name: "金震环", number: 11 },
+                { name: "徐孟琨", number: 5 },
+                { name: "宋睿", number: 3 },
+                { name: "张宇墨", number: 4 },
+                { name: "宋坤余", number: 14 },
+                { name: "张宇璠", number: 17 },
+                { name: "王楷汶", number: 18 },
+                { name: "高宇童", number: 10 },
+                { name: "王子尧", number: 0 },
+                { name: "李冠震", number: 7 },
+                { name: "叶慕阳", number: 2 },
+                { name: "黄天畅", number: 33 },
+                { name: "张天宇", number: 13 },
+                { name: "王轩浩", number: 23 },
+                { name: "武弘健", number: 20 },
+                { name: "马浚哲", number: 6 },
+                { name: "陈昕睿", number: 16 },
+                { name: "鄢焕章", number: 77 },
+                { name: "刘卓飞", number: 1 },
+                { name: "邵博宣", number: 8 },
+                { name: "李昊男", number: 30 },
+                { name: "郑岩昆", number: 22 },
+                { name: "左一博", number: 12 },
+                { name: "于牛牛", number: 69 },
+                { name: "方梓旭", number: 24 },
+                { name: "王世峣", number: 32 }
+            ];
+            
+            players = defaultPlayers.map((player, index) => ({
+                id: index + 1,
+                name: player.name,
+                number: player.number,
+                starter: index < 5, // 前5名球员为首发
+                playing: index < 5, // 前5名球员在场上
+                points: 0,
+                rebounds: { offensive: 0, defensive: 0 },
+                assists: 0,
+                steals: 0,
+                blocks: 0,
+                turnovers: 0,
+                fouls: 0
+            }));
+            
+            // 初始化投篮数据
+            players.forEach(player => {
+                shotData[player.id] = { 
+                    twoAttempts: 0,
+                    twoMade: 0,
+                    threeAttempts: 0, 
+                    threeMade: 0,
+                    fta: 0,
+                    ftm: 0
+                };
+            });
+            
+            saveData();
+        }
+        
+        // 添加默认球员
+        function addDefaultPlayers() {
+            if (players.length > 0) {
+                if (!confirm('当前已有球员数据，确定要添加默认球员吗？')) {
+                    return;
+                }
+            }
+            initializeDefaultPlayers();
+            renderPlayers();
+            renderPlayerList();
+            updatePlayingCount();
+            updateSubstitutionButton();
+        }
+        
+        // 渲染球员列表
+        function renderPlayers() {
+            const playersContainer = document.getElementById('players-container');
+            playersContainer.innerHTML = '';
+            
+            // 只显示场上球员
+            const playingPlayers = players.filter(player => player.playing);
+            
+            if (playingPlayers.length === 0) {
+                playersContainer.innerHTML = '<div class="empty-state">暂无场上球员</div>';
+                return;
+            }
+            
+            playingPlayers.forEach(player => {
+                const playerCard = document.createElement('div');
+                playerCard.className = `player-card ${selectedPlayerId === player.id ? 'active' : ''} playing`;
+                playerCard.dataset.id = player.id;
+                
+                playerCard.innerHTML = `
+                    <div class="player-number">${player.number}</div>
+                    <div class="player-name">${player.name}</div>
+                    <div class="player-stats">${player.points}分 ${player.rebounds.offensive + player.rebounds.defensive}板 ${player.assists}助</div>
+                `;
+                
+                playerCard.addEventListener('click', () => selectPlayer(player.id));
+                playersContainer.appendChild(playerCard);
+            });
+        }
+        
+        // 渲染球员管理列表
+        function renderPlayerList() {
+            const playersList = document.getElementById('players-list');
+            playersList.innerHTML = '';
+            
+            if (players.length === 0) {
+                playersList.innerHTML = '<div class="empty-state">暂无球员数据</div>';
+                return;
+            }
+            
+            players.forEach(player => {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'player-item';
+                
+                playerItem.innerHTML = `
+                    <div>
+                        <strong>${player.name} (#${player.number})</strong>
+                        <div class="player-status">${player.playing ? '场上' : '替补'}</div>
+                    </div>
+                    <div>
+                        <button class="action-btn btn-danger btn-small" onclick="deletePlayer(${player.id})">删除</button>
+                    </div>
+                `;
+                
+                playersList.appendChild(playerItem);
+            });
+        }
+        
+        // 选择球员
+        function selectPlayer(playerId) {
+            selectedPlayerId = playerId;
+            renderPlayers();
+            saveData();
+        }
+        
+        // 添加球员
+        function addPlayer() {
+            const nameInput = document.getElementById('player-name');
+            const numberInput = document.getElementById('player-number');
+            
+            const name = nameInput.value.trim();
+            const number = parseInt(numberInput.value);
+            
+            if (!name || isNaN(number)) {
+                alert('请输入有效的球员姓名和号码！');
+                return;
+            }
+            
+            // 检查号码是否已存在
+            if (players.some(player => player.number === number)) {
+                alert('该号码已被使用，请使用其他号码！');
+                return;
+            }
+            
+            const player = {
+                id: Date.now(),
+                name: name,
+                number: number,
+                starter: false,
+                playing: false,
+                points: 0,
+                rebounds: { offensive: 0, defensive: 0 },
+                assists: 0,
+                steals: 0,
+                blocks: 0,
+                turnovers: 0,
+                fouls: 0
+            };
+            
+            players.push(player);
+            shotData[player.id] = { 
+                twoAttempts: 0,
+                twoMade: 0,
+                threeAttempts: 0, 
+                threeMade: 0,
+                fta: 0,
+                ftm: 0
+            };
+            
+            renderPlayerList();
+            updatePlayingCount();
+            updateSubstitutionButton();
+            
+            // 清空输入框
+            nameInput.value = '';
+            numberInput.value = '';
+            
+            saveData();
+        }
+        
+        // 删除球员 - 添加自动补位功能
+        function deletePlayer(playerId) {
+            if (confirm('确定要删除这名球员吗？')) {
+                const playerIndex = players.findIndex(player => player.id === playerId);
+                const player = players[playerIndex];
+                
+                if (player.playing) {
+                    // 如果删除的是场上球员，自动补位
+                    const benchPlayers = players.filter(p => !p.playing && p.id !== playerId);
+                    if (benchPlayers.length > 0) {
+                        // 选择第一个替补球员补位
+                        const replacementPlayer = benchPlayers[0];
+                        replacementPlayer.playing = true;
+                        addEvent(`自动换人: ${player.name}被删除, ${replacementPlayer.name}上场`);
+                    }
+                }
+                
+                // 删除球员
+                players = players.filter(player => player.id !== playerId);
+                delete shotData[playerId];
+                
+                renderPlayerList();
+                renderPlayers();
+                updateSubstitutionButton();
+                saveData();
+            }
+        }
+        
+        // 显示投篮模态框
+        function showShotModal(points) {
+            if (!selectedPlayerId) {
+                alert('请先选择球员！');
+                return;
+            }
+            
+            currentShotPoints = points;
+            document.getElementById('shot-modal-title').textContent = `${points}分球记录`;
+            document.getElementById('shot-modal-description').textContent = `选择${points}分球结果：`;
+            document.getElementById('shot-modal').style.display = 'flex';
+        }
+        
+        // 确认投篮结果
+        function confirmShot(made) {
+            const player = players.find(p => p.id === selectedPlayerId);
+            if (player) {
+                // 保存当前状态用于撤销
+                const prevState = {
+                    type: 'score',
+                    playerId: player.id,
+                    points: player.points,
+                    homeScore: homeScore,
+                    shotData: JSON.parse(JSON.stringify(shotData[player.id]))
+                };
+                
+                // 初始化投篮数据
+                if (!shotData[player.id]) {
+                    shotData[player.id] = { 
+                        twoAttempts: 0,
+                        twoMade: 0,
+                        threeAttempts: 0, 
+                        threeMade: 0,
+                        fta: 0,
+                        ftm: 0
+                    };
+                }
+                
+                // 更新投篮数据
+                if (currentShotPoints === 3) {
+                    shotData[player.id].threeAttempts++;
+                    if (made) shotData[player.id].threeMade++;
+                } else {
+                    shotData[player.id].twoAttempts++;
+                    if (made) shotData[player.id].twoMade++;
+                }
+                
+                if (made) {
+                    player.points = (player.points || 0) + currentShotPoints;
+                    homeScore += currentShotPoints;
+                    
+                    // 添加事件记录
+                    addEvent(`${player.name} 命中${currentShotPoints}分球`);
+                } else {
+                    // 添加投丢事件记录
+                    addEvent(`${player.name} ${currentShotPoints}分球未命中`);
+                }
+                
+                // 更新比分显示
+                updateScoreDisplay();
+                renderPlayers();
+                
+                // 保存历史记录
+                prevState.newPoints = player.points;
+                prevState.newHomeScore = homeScore;
+                prevState.newShotData = JSON.parse(JSON.stringify(shotData[player.id]));
+                actionHistory.push(prevState);
+                
+                closeModal('shot-modal');
+                saveData();
+            }
+        }
+        
+        // 显示罚球模态框
+        function showFreeThrowModal() {
+            if (!selectedPlayerId) {
+                alert('请先选择球员！');
+                return;
+            }
+            
+            document.getElementById('free-throw-modal').style.display = 'flex';
+        }
+        
+        // 确认罚球结果
+        function confirmFreeThrow(made) {
+            const player = players.find(p => p.id === selectedPlayerId);
+            if (player) {
+                // 保存当前状态用于撤销
+                const prevState = {
+                    type: 'freeThrow',
+                    playerId: player.id,
+                    points: player.points,
+                    homeScore: homeScore,
+                    shotData: JSON.parse(JSON.stringify(shotData[player.id]))
+                };
+                
+                // 初始化投篮数据
+                if (!shotData[player.id]) {
+                    shotData[player.id] = { 
+                        twoAttempts: 0,
+                        twoMade: 0,
+                        threeAttempts: 0, 
+                        threeMade: 0,
+                        fta: 0,
+                        ftm: 0
+                    };
+                }
+                
+                // 更新投篮数据
+                shotData[player.id].fta++;
+                if (made) {
+                    shotData[player.id].ftm++;
+                    player.points = (player.points || 0) + 1;
+                    homeScore += 1;
+                    
+                    // 添加事件记录
+                    addEvent(`${player.name} 罚球命中`);
+                } else {
+                    // 添加投丢事件记录
+                    addEvent(`${player.name} 罚球未命中`);
+                }
+                
+                // 更新比分显示
+                updateScoreDisplay();
+                renderPlayers();
+                
+                // 保存历史记录
+                prevState.newPoints = player.points;
+                prevState.newHomeScore = homeScore;
+                prevState.newShotData = JSON.parse(JSON.stringify(shotData[player.id]));
+                actionHistory.push(prevState);
+                
+                closeModal('free-throw-modal');
+                saveData();
+            }
+        }
+        
+        // 显示篮板模态框
+        function showReboundModal(team) {
+            currentReboundTeam = team;
+            
+            if (team === 'home' && !selectedPlayerId) {
+                alert('请先选择球员！');
+                return;
+            }
+            
+            document.getElementById('rebound-modal-title').textContent = `${team === 'home' ? '我方' : '对手'}篮板记录`;
+            document.getElementById('rebound-modal-description').textContent = `选择${team === 'home' ? '我方' : '对手'}篮板类型：`;
+            document.getElementById('rebound-modal').style.display = 'flex';
+        }
+        
+        // 确认篮板类型
+        function confirmRebound(type) {
+            if (currentReboundTeam === 'home') {
+                // 我方篮板
+                if (!selectedPlayerId) {
+                    alert('请先选择球员！');
+                    return;
+                }
+                
+                const player = players.find(p => p.id === selectedPlayerId);
+                if (player) {
+                    // 保存当前状态用于撤销
+                    const prevState = {
+                        type: 'rebound',
+                        playerId: player.id,
+                        reboundType: type,
+                        rebounds: JSON.parse(JSON.stringify(player.rebounds)),
+                        teamRebounds: JSON.parse(JSON.stringify(reboundData.home))
+                    };
+                    
+                    player.rebounds[type] = (player.rebounds[type] || 0) + 1;
+                    reboundData.home[type] = (reboundData.home[type] || 0) + 1;
+                    
+                    // 添加事件记录
+                    addEvent(`${player.name} 抢到${type === 'offensive' ? '进攻' : '防守'}篮板`);
+                    
+                    // 保存历史记录
+                    prevState.newRebounds = JSON.parse(JSON.stringify(player.rebounds));
+                    prevState.newTeamRebounds = JSON.parse(JSON.stringify(reboundData.home));
+                    actionHistory.push(prevState);
+                    
+                    renderPlayers();
+                }
+            } else {
+                // 对手篮板
+                // 保存当前状态用于撤销
+                const prevState = {
+                    type: 'opponentRebound',
+                    reboundType: type,
+                    rebounds: JSON.parse(JSON.stringify(reboundData.away))
+                };
+                
+                reboundData.away[type] = (reboundData.away[type] || 0) + 1;
+                opponentData.rebounds[type] = (opponentData.rebounds[type] || 0) + 1;
+                
+                // 添加事件记录
+                addEvent(`对手抢到${type === 'offensive' ? '进攻' : '防守'}篮板`);
+                
+                // 保存历史记录
+                prevState.newRebounds = JSON.parse(JSON.stringify(reboundData.away));
+                actionHistory.push(prevState);
+            }
+            
+            closeModal('rebound-modal');
+            saveData();
+        }
+        
+        // 显示对手投篮模态框
+        function showOpponentShotModal(points) {
+            currentShotPoints = points;
+            document.getElementById('opponent-shot-modal-title').textContent = `对手${points}分球记录`;
+            document.getElementById('opponent-shot-modal-description').textContent = `选择对手${points}分球结果：`;
+            document.getElementById('opponent-shot-modal').style.display = 'flex';
+        }
+        
+        // 确认对手投篮结果
+        function confirmOpponentShot(made) {
+            // 保存当前状态用于撤销
+            const prevState = {
+                type: 'opponentScore',
+                points: currentShotPoints,
+                made: made,
+                awayScore: awayScore,
+                shotData: JSON.parse(JSON.stringify(opponentShotData))
+            };
+            
+            // 更新对手投篮数据
+            if (currentShotPoints === 3) {
+                opponentShotData.threeAttempts++;
+                if (made) opponentShotData.threeMade++;
+            } else {
+                opponentShotData.twoAttempts++;
+                if (made) opponentShotData.twoMade++;
+            }
+            
+            if (made) {
+                awayScore += currentShotPoints;
+                opponentData.points += currentShotPoints;
+                addEvent(`对手命中${currentShotPoints}分球`);
+            } else {
+                addEvent(`对手${currentShotPoints}分球未命中`);
+            }
+            
+            updateScoreDisplay();
+            
+            // 保存历史记录
+            prevState.newAwayScore = awayScore;
+            prevState.newShotData = JSON.parse(JSON.stringify(opponentShotData));
+            actionHistory.push(prevState);
+            
+            closeModal('opponent-shot-modal');
+            saveData();
+        }
+        
+        // 显示对手罚球模态框
+        function showOpponentFreeThrowModal() {
+            document.getElementById('opponent-free-throw-modal').style.display = 'flex';
+        }
+        
+        // 确认对手罚球结果
+        function confirmOpponentFreeThrow(made) {
+            // 保存当前状态用于撤销
+            const prevState = {
+                type: 'opponentFreeThrow',
+                made: made,
+                awayScore: awayScore,
+                shotData: JSON.parse(JSON.stringify(opponentShotData))
+            };
+            
+            // 更新对手投篮数据
+            opponentShotData.fta++;
+            if (made) {
+                opponentShotData.ftm++;
+                awayScore += 1;
+                opponentData.points += 1;
+                addEvent(`对手罚球命中`);
+            } else {
+                addEvent(`对手罚球未命中`);
+            }
+            
+            updateScoreDisplay();
+            
+            // 保存历史记录
+            prevState.newAwayScore = awayScore;
+            prevState.newShotData = JSON.parse(JSON.stringify(opponentShotData));
+            actionHistory.push(prevState);
+            
+            closeModal('opponent-free-throw-modal');
+            saveData();
+        }
+        
+        // 记录统计数据
+        function recordStat(statType) {
+            if (!selectedPlayerId) {
+                alert('请先选择球员！');
+                return;
+            }
+            
+            const player = players.find(p => p.id === selectedPlayerId);
+            if (!player) return;
+            
+            // 保存当前状态用于撤销
+            const prevState = {
+                type: 'stat',
+                playerId: player.id,
+                statType: statType,
+                statValue: player[statType + 's'] || 0
+            };
+            
+            let description = '';
+            
+            switch(statType) {
+                case 'assist':
+                    player.assists = (player.assists || 0) + 1;
+                    description = `${player.name} 助攻`;
+                    break;
+                case 'steal':
+                    player.steals = (player.steals || 0) + 1;
+                    description = `${player.name} 抢断`;
+                    break;
+                case 'block':
+                    player.blocks = (player.blocks || 0) + 1;
+                    description = `${player.name} 盖帽`;
+                    break;
+                case 'turnover':
+                    player.turnovers = (player.turnovers || 0) + 1;
+                    description = `${player.name} 失误`;
+                    break;
+                case 'foul':
+                    player.fouls = (player.fouls || 0) + 1;
+                    description = `${player.name} 犯规`;
+                    break;
+            }
+            
+            addEvent(description);
+            
+            // 保存历史记录
+            prevState.newStatValue = player[statType + 's'] || 0;
+            actionHistory.push(prevState);
+            
+            saveData();
+        }
+        
+        // 记录对手统计数据
+        function recordOpponentStat(statType) {
+            // 保存当前状态用于撤销
+            const prevState = {
+                type: 'opponentStat',
+                statType: statType,
+                statValue: opponentData[statType + 's'] || 0
+            };
+            
+            let description = '';
+            
+            switch(statType) {
+                case 'turnover':
+                    opponentData.turnovers = (opponentData.turnovers || 0) + 1;
+                    description = `对手失误`;
+                    break;
+                case 'foul':
+                    opponentData.fouls = (opponentData.fouls || 0) + 1;
+                    description = `对手犯规`;
+                    break;
+            }
+            
+            addEvent(description);
+            
+            // 保存历史记录
+            prevState.newStatValue = opponentData[statType + 's'] || 0;
+            actionHistory.push(prevState);
+            
+            saveData();
+        }
+        
+        // 显示换人模态框
+        function showSubstitutionModal() {
+            const outPlayers = document.getElementById('out-players');
+            const inPlayers = document.getElementById('in-players');
+            
+            outPlayers.innerHTML = '';
+            inPlayers.innerHTML = '';
+            
+            substitutionOutPlayerId = null;
+            substitutionInPlayerId = null;
+            
+            // 添加场上球员（可换下）
+            const playingPlayers = players.filter(p => p.playing);
+            if (playingPlayers.length === 0) {
+                alert('没有球员在场上，无法换人！');
+                return;
+            }
+            
+            playingPlayers.forEach(player => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player-card';
+                playerDiv.dataset.id = player.id;
+                playerDiv.innerHTML = `
+                    <div class="player-number">${player.number}</div>
+                    <div class="player-name">${player.name}</div>
+                `;
+                
+                playerDiv.addEventListener('click', function() {
+                    document.querySelectorAll('#out-players .player-card').forEach(p => {
+                        p.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    substitutionOutPlayerId = player.id;
+                });
+                
+                outPlayers.appendChild(playerDiv);
+            });
+            
+            // 添加替补球员（可换上）
+            const benchPlayers = players.filter(p => !p.playing);
+            if (benchPlayers.length === 0) {
+                alert('没有替补球员，无法换人！');
+                return;
+            }
+            
+            benchPlayers.forEach(player => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player-card';
+                playerDiv.dataset.id = player.id;
+                playerDiv.innerHTML = `
+                    <div class="player-number">${player.number}</div>
+                    <div class="player-name">${player.name}</div>
+                `;
+                
+                playerDiv.addEventListener('click', function() {
+                    document.querySelectorAll('#in-players .player-card').forEach(p => {
+                        p.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    substitutionInPlayerId = player.id;
+                });
+                
+                inPlayers.appendChild(playerDiv);
+            });
+            
+            document.getElementById('substitution-modal').style.display = 'flex';
+        }
+        
+        // 确认换人
+        function confirmSubstitution() {
+            if (!substitutionOutPlayerId || !substitutionInPlayerId) {
+                alert('请选择下场和上场球员！');
+                return;
+            }
+            
+            const outPlayer = players.find(p => p.id === substitutionOutPlayerId);
+            const inPlayer = players.find(p => p.id === substitutionInPlayerId);
+            
+            if (!outPlayer || !inPlayer) {
+                alert('球员数据错误！');
+                return;
+            }
+            
+            // 保存当前状态用于撤销
+            const prevState = {
+                type: 'substitution',
+                outPlayerId: outPlayer.id,
+                inPlayerId: inPlayer.id,
+                outPlayerPlaying: outPlayer.playing,
+                inPlayerPlaying: inPlayer.playing
+            };
+            
+            // 更新球员状态
+            outPlayer.playing = false;
+            inPlayer.playing = true;
+            
+            // 添加事件记录
+            addEvent(`换人: ${outPlayer.name}下, ${inPlayer.name}上`);
+            
+            // 重新渲染球员列表
+            renderPlayers();
+            renderPlayerList();
+            updatePlayingCount();
+            updateSubstitutionButton();
+            
+            // 保存历史记录
+            prevState.newOutPlayerPlaying = outPlayer.playing;
+            prevState.newInPlayerPlaying = inPlayer.playing;
+            actionHistory.push(prevState);
+            
+            closeModal('substitution-modal');
+            saveData();
+        }
+        
+        // 关闭模态框
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // 显示重置模态框
+        function showResetModal() {
+            document.getElementById('reset-modal').style.display = 'flex';
+        }
+        
+        // 重置数据
+        function resetData() {
+            // 清空所有数据
+            players = [];
+            selectedPlayerId = null;
+            homeScore = 0;
+            awayScore = 0;
+            quarter = 1;
+            events = [];
+            actionHistory = [];
+            shotData = {};
+            opponentShotData = {
+                twoAttempts: 0,
+                twoMade: 0,
+                threeAttempts: 0,
+                threeMade: 0,
+                fta: 0,
+                ftm: 0
+            };
+            reboundData = {
+                home: { offensive: 0, defensive: 0 },
+                away: { offensive: 0, defensive: 0 }
+            };
+            opponentData = {
+                points: 0,
+                rebounds: { offensive: 0, defensive: 0 },
+                turnovers: 0,
+                fouls: 0
+            };
+            
+            // 重新初始化默认球员
+            initializeDefaultPlayers();
+            
+            // 更新显示
+            updateScoreDisplay();
+            document.getElementById('quarter').textContent = quarter;
+            document.querySelector('.game-status span').textContent = `第${quarter}节`;
+            renderPlayers();
+            renderPlayerList();
+            updatePlayingCount();
+            updateSubstitutionButton();
+            renderEvents();
+            
+            closeModal('reset-modal');
+            saveData();
+            
+            alert('数据已重置！');
+        }
+        
+        // 添加事件记录
+        function addEvent(description) {
+            const eventsContainer = document.getElementById('events-container');
+            
+            // 清除"暂无事件记录"
+            if (eventsContainer.firstChild && eventsContainer.firstChild.classList.contains('empty-state')) {
+                eventsContainer.innerHTML = '';
+            }
+            
+            const eventItem = document.createElement('div');
+            eventItem.className = 'event-item';
+            eventItem.innerHTML = `
+                <span>${description}</span>
+                <span class="event-undo" onclick="undoLastAction()">撤销</span>
+            `;
+            
+            // 添加到顶部
+            if (eventsContainer.firstChild) {
+                eventsContainer.insertBefore(eventItem, eventsContainer.firstChild);
+            } else {
+                eventsContainer.appendChild(eventItem);
+            }
+            
+            // 限制事件数量
+            if (eventsContainer.children.length > 10) {
+                eventsContainer.removeChild(eventsContainer.lastChild);
+            }
+            
+            // 保存到事件数组
+            events.unshift(description);
+            if (events.length > 10) {
+                events.pop();
+            }
+        }
+        
+        // 渲染事件记录
+        function renderEvents() {
+            const eventsContainer = document.getElementById('events-container');
+            eventsContainer.innerHTML = '';
+            
+            if (events.length === 0) {
+                eventsContainer.innerHTML = '<div class="empty-state">暂无事件记录</div>';
+                return;
+            }
+            
+            events.forEach(event => {
+                const eventItem = document.createElement('div');
+                eventItem.className = 'event-item';
+                eventItem.innerHTML = `
+                    <span>${event}</span>
+                    <span class="event-undo" onclick="undoLastAction()">撤销</span>
+                `;
+                eventsContainer.appendChild(eventItem);
+            });
+        }
+        
+        // 更新比分显示
+        function updateScoreDisplay() {
+            document.getElementById('home-score').textContent = homeScore;
+            document.getElementById('away-score').textContent = awayScore;
+        }
+        
+        // 更新场上球员计数
+        function updatePlayingCount() {
+            const playingCount = players.filter(p => p.playing).length;
+            document.getElementById('playing-count').textContent = `场上: ${playingCount}/5`;
+        }
+        
+        // 更新换人按钮状态
+        function updateSubstitutionButton() {
+            const substitutionBtn = document.getElementById('substitution-btn');
+            const playingCount = players.filter(p => p.playing).length;
+            const benchCount = players.filter(p => !p.playing).length;
+            
+            if (playingCount === 0 || benchCount === 0) {
+                substitutionBtn.disabled = true;
+                substitutionBtn.title = playingCount === 0 ? '没有球员在场上' : '没有替补球员';
+            } else {
+                substitutionBtn.disabled = false;
+                substitutionBtn.title = '';
+            }
+        }
+        
+        // 下一节
+        function nextQuarter() {
+            quarter++;
+            
+            if (quarter > 4) {
+                alert('比赛已经结束！');
+                quarter = 4;
+                return;
+            }
+            
+            document.getElementById('quarter').textContent = quarter;
+            document.querySelector('.game-status span').textContent = `第${quarter}节`;
+            
+            // 添加节间事件
+            addEvent(`第${quarter}节开始`);
+            
+            saveData();
+        }
+        
+        // 切换标签
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+        
+        // 撤销上一步操作
+        function undoLastAction() {
+            if (actionHistory.length === 0) {
+                alert('没有可撤销的操作！');
+                return;
+            }
+            
+            const lastAction = actionHistory.pop();
+            
+            switch(lastAction.type) {
+                case 'score':
+                case 'freeThrow':
+                    const player = players.find(p => p.id === lastAction.playerId);
+                    if (player) {
+                        player.points = lastAction.points;
+                        homeScore = lastAction.homeScore;
+                        shotData[player.id] = lastAction.shotData;
+                    }
+                    break;
+                    
+                case 'stat':
+                    const statPlayer = players.find(p => p.id === lastAction.playerId);
+                    if (statPlayer) {
+                        statPlayer[lastAction.statType + 's'] = lastAction.statValue;
+                    }
+                    break;
+                    
+                case 'rebound':
+                    const reboundPlayer = players.find(p => p.id === lastAction.playerId);
+                    if (reboundPlayer) {
+                        reboundPlayer.rebounds = lastAction.rebounds;
+                        reboundData.home = lastAction.teamRebounds;
+                    }
+                    break;
+                    
+                case 'opponentScore':
+                case 'opponentFreeThrow':
+                    awayScore = lastAction.awayScore;
+                    opponentShotData = lastAction.shotData;
+                    if (lastAction.made) {
+                        opponentData.points -= lastAction.points || 1;
+                    }
+                    break;
+                    
+                case 'opponentStat':
+                    opponentData[lastAction.statType + 's'] = lastAction.statValue;
+                    break;
+                    
+                case 'opponentRebound':
+                    reboundData.away = lastAction.rebounds;
+                    opponentData.rebounds[lastAction.reboundType] = lastAction.rebounds[lastAction.reboundType];
+                    break;
+                    
+                case 'substitution':
+                    const outPlayer = players.find(p => p.id === lastAction.outPlayerId);
+                    const inPlayer = players.find(p => p.id === lastAction.inPlayerId);
+                    if (outPlayer && inPlayer) {
+                        outPlayer.playing = lastAction.outPlayerPlaying;
+                        inPlayer.playing = lastAction.inPlayerPlaying;
+                    }
+                    break;
+            }
+            
+            // 移除最后一个事件
+            if (events.length > 0) {
+                events.shift();
+            }
+            
+            // 更新显示
+            updateScoreDisplay();
+            renderPlayers();
+            renderPlayerList();
+            updatePlayingCount();
+            updateSubstitutionButton();
+            renderEvents();
+            
+            saveData();
+        }
+        
+        // 导出Excel功能 - 只导出上过场的球员，并包含完整的投篮数据
+        function exportToExcel() {
+            // 创建工作簿
+            const wb = XLSX.utils.book_new();
+            
+            // 筛选上过场的球员
+            const playedPlayers = players.filter(player => 
+                player.playing || player.points > 0 || 
+                (player.rebounds.offensive + player.rebounds.defensive) > 0 ||
+                player.assists > 0 || player.steals > 0 || 
+                player.blocks > 0 || player.turnovers > 0 || 
+                player.fouls > 0
+            );
+            
+            // 我方球员数据
+            const playerData = playedPlayers.map(player => {
+                const shots = shotData[player.id] || { 
+                    twoAttempts: 0,
+                    twoMade: 0,
+                    threeAttempts: 0, 
+                    threeMade: 0,
+                    fta: 0,
+                    ftm: 0
+                };
+                
+                // 计算各种命中率
+                const twoPercentage = shots.twoAttempts > 0 ? (shots.twoMade / shots.twoAttempts * 100).toFixed(1) : 0;
+                const threePercentage = shots.threeAttempts > 0 ? (shots.threeMade / shots.threeAttempts * 100).toFixed(1) : 0;
+                const ftPercentage = shots.fta > 0 ? (shots.ftm / shots.fta * 100).toFixed(1) : 0;
+                const totalAttempts = shots.twoAttempts + shots.threeAttempts;
+                const totalMade = shots.twoMade + shots.threeMade;
+                const totalPercentage = totalAttempts > 0 ? (totalMade / totalAttempts * 100).toFixed(1) : 0;
+                
+                return {
+                    '球衣号码': player.number,
+                    '姓名': player.name,
+                    '得分': player.points || 0,
+                    '2分出手': shots.twoAttempts,
+                    '2分命中': shots.twoMade,
+                    '2分命中率': `${twoPercentage}%`,
+                    '3分出手': shots.threeAttempts,
+                    '3分命中': shots.threeMade,
+                    '3分命中率': `${threePercentage}%`,
+                    '总出手': totalAttempts,
+                    '总命中': totalMade,
+                    '总命中率': `${totalPercentage}%`,
+                    '罚球出手': shots.fta,
+                    '罚球命中': shots.ftm,
+                    '罚球命中率': `${ftPercentage}%`,
+                    '进攻篮板': player.rebounds.offensive || 0,
+                    '防守篮板': player.rebounds.defensive || 0,
+                    '总篮板': (player.rebounds.offensive || 0) + (player.rebounds.defensive || 0),
+                    '助攻': player.assists || 0,
+                    '抢断': player.steals || 0,
+                    '盖帽': player.blocks || 0,
+                    '失误': player.turnovers || 0,
+                    '犯规': player.fouls || 0,
+                    '状态': player.playing ? '场上' : '替补'
+                };
+            });
+            
+            const playerWs = XLSX.utils.json_to_sheet(playerData);
+            XLSX.utils.book_append_sheet(wb, playerWs, "我方球员数据");
+            
+            // 对手数据 - 包含完整的投篮数据
+            const opponentTwoPercentage = opponentShotData.twoAttempts > 0 ? 
+                (opponentShotData.twoMade / opponentShotData.twoAttempts * 100).toFixed(1) : 0;
+            const opponentThreePercentage = opponentShotData.threeAttempts > 0 ? 
+                (opponentShotData.threeMade / opponentShotData.threeAttempts * 100).toFixed(1) : 0;
+            const opponentFtPercentage = opponentShotData.fta > 0 ? 
+                (opponentShotData.ftm / opponentShotData.fta * 100).toFixed(1) : 0;
+            const opponentTotalAttempts = opponentShotData.twoAttempts + opponentShotData.threeAttempts;
+            const opponentTotalMade = opponentShotData.twoMade + opponentShotData.threeMade;
+            const opponentTotalPercentage = opponentTotalAttempts > 0 ? 
+                (opponentTotalMade / opponentTotalAttempts * 100).toFixed(1) : 0;
+            
+            const opponentDataSheet = [{
+                '得分': opponentData.points || 0,
+                '2分出手': opponentShotData.twoAttempts,
+                '2分命中': opponentShotData.twoMade,
+                '2分命中率': `${opponentTwoPercentage}%`,
+                '3分出手': opponentShotData.threeAttempts,
+                '3分命中': opponentShotData.threeMade,
+                '3分命中率': `${opponentThreePercentage}%`,
+                '总出手': opponentTotalAttempts,
+                '总命中': opponentTotalMade,
+                '总命中率': `${opponentTotalPercentage}%`,
+                '罚球出手': opponentShotData.fta,
+                '罚球命中': opponentShotData.ftm,
+                '罚球命中率': `${opponentFtPercentage}%`,
+                '进攻篮板': opponentData.rebounds.offensive || 0,
+                '防守篮板': opponentData.rebounds.defensive || 0,
+                '总篮板': (opponentData.rebounds.offensive || 0) + (opponentData.rebounds.defensive || 0),
+                '失误': opponentData.turnovers || 0,
+                '犯规': opponentData.fouls || 0
+            }];
+            
+            const opponentWs = XLSX.utils.json_to_sheet(opponentDataSheet);
+            XLSX.utils.book_append_sheet(wb, opponentWs, "对手数据");
+            
+            // 比赛总结
+            const summaryData = [{
+                '球队': '我方',
+                '得分': homeScore,
+                '进攻篮板': reboundData.home.offensive || 0,
+                '防守篮板': reboundData.home.defensive || 0,
+                '总篮板': (reboundData.home.offensive || 0) + (reboundData.home.defensive || 0)
+            }, {
+                '球队': '对手',
+                '得分': awayScore,
+                '进攻篮板': reboundData.away.offensive || 0,
+                '防守篮板': reboundData.away.defensive || 0,
+                '总篮板': (reboundData.away.offensive || 0) + (reboundData.away.defensive || 0)
+            }, {
+                '球队': '分差',
+                '得分': homeScore - awayScore
+            }];
+            
+            const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, summaryWs, "比赛总结");
+            
+            // 导出Excel文件
+            const fileName = `篮球比赛数据_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            
+            alert(`Excel文件已生成，快把文件发给牛天齐~: ${fileName}`);
+        }
+    </script>
+</body>
+</html>
