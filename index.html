@@ -7,29 +7,34 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
-            --primary: #1a73e8;
-            --secondary: #f8f9fa;
-            --text: #202124;
-            --light-text: #5f6368;
-            --success: #28a745;
-            --danger: #dc3545;
-            --warning: #ffc107;
-            --substitution: #9c27b0; /* 新增换人按钮颜色 */
+            --primary: #0A84FF; /* iOS systemBlue */
+            --secondary: #F2F2F7; /* iOS grouped background */
+            --text: #1C1C1E; /* iOS label color */
+            --light-text: #6C6C70; /* iOS secondary label color */
+            --success: #32D74B; /* iOS systemGreen */
+            --danger: #FF453A; /* iOS systemRed */
+            --warning: #FFD60A; /* iOS systemYellow */
+            --substitution: #BF5AF2; /* iOS systemPurple */
+            --shadow-soft: 0 6px 16px rgba(10, 132, 255, 0.18);
+            --shadow-press: 0 2px 8px rgba(0, 0, 0, 0.18);
+            --radius: 14px;
         }
         
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         
         body {
-            background-color: #f5f7fa;
+            background-color: var(--secondary);
             color: var(--text);
-            padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); /* 兼容安全区 */
-            font-size: 14px;
-            line-height: 1.5;
+            padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+            font-size: 15px;
+            line-height: 1.55;
         }
         
         .container {
@@ -168,24 +173,30 @@
         }
         
         .action-btn {
-            padding: 12px 8px;
             border: none;
-            border-radius: 8px;
-            font-size: 13px;
+            border-radius: var(--radius);
+            font-size: 15px;
             cursor: pointer;
             text-align: center;
-            transition: all 0.2s ease;
-            font-weight: 500;
-            width: 100%; /* 窄屏占满整行 */
+            transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+            font-weight: 600;
+            width: 100%;
+            padding: 12px 16px;
+            min-height: 44px;
+            -webkit-tap-highlight-color: transparent;
+            background: #fff;
+            color: var(--text);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.06);
         }
         
         .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
         }
         
         .action-btn:active {
-            transform: translateY(0);
+            transform: scale(0.98);
+            box-shadow: var(--shadow-press);
         }
         
         .action-btn:disabled {
@@ -195,29 +206,36 @@
             box-shadow: none;
         }
         
+        .btn-primary {
+            background-color: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(10, 132, 255, 0.24);
+        }
+        .btn-primary:hover { filter: brightness(1.03); }
+        .btn-primary:active { filter: brightness(0.98); box-shadow: var(--shadow-press); }
+        
         .btn-success {
             background-color: var(--success);
-            color: white;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(50, 215, 75, 0.22);
         }
         
         .btn-danger {
             background-color: var(--danger);
-            color: white;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(255, 69, 58, 0.22);
         }
         
         .btn-warning {
             background-color: var(--warning);
-            color: var(--text);
+            color: #1C1C1E;
+            box-shadow: 0 2px 6px rgba(255, 214, 10, 0.22);
         }
         
         .btn-substitution {
             background-color: var(--substitution);
-            color: white;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(191, 90, 242, 0.22);
         }
         
         .btn-small {
@@ -257,17 +275,25 @@
         }
         
         .event-undo {
-            color: var(--primary);
+            color: #0A84FF;
             cursor: pointer;
             font-size: 11px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            background: #f0f0f0;
-            transition: all 0.2s;
+            padding: 6px 10px;
+            border-radius: 9999px;
+            background: rgba(10, 132, 255, 0.12);
+            border: 1px solid rgba(10, 132, 255, 0.35);
+            transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
         }
         
         .event-undo:hover {
-            background: #e0e0e0;
+            background: rgba(10, 132, 255, 0.18);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(10, 132, 255, 0.18);
+        }
+        
+        .event-undo:active {
+            transform: scale(0.98);
+            box-shadow: var(--shadow-press);
         }
         
         .controls {
@@ -384,19 +410,27 @@
         }
         
         .undo-btn {
-            background: var(--warning);
-            color: var(--text);
+            background-color: var(--warning);
+            color: #1C1C1E;
             border: none;
-            border-radius: 6px;
-            padding: 8px 12px;
-            font-size: 12px;
+            border-radius: var(--radius);
+            padding: 8px 14px;
+            font-size: 13px;
             cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s;
+            font-weight: 600;
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+            min-height: 36px;
+            box-shadow: 0 2px 6px rgba(255, 214, 10, 0.22);
         }
         
         .undo-btn:hover {
-            background: #e0a800;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(255, 214, 10, 0.26);
+        }
+        
+        .undo-btn:active {
+            transform: scale(0.98);
+            box-shadow: var(--shadow-press);
         }
 
         /* ----------- 小屏适配 ----------- */
@@ -478,19 +512,26 @@
             position: absolute;
             top: 15px;
             right: 15px;
-            background: var(--danger);
-            color: white;
+            background-color: var(--danger);
+            color: #fff;
             border: none;
-            border-radius: 6px;
-            padding: 6px 10px;
-            font-size: 11px;
+            border-radius: 9999px;
+            padding: 8px 12px;
+            font-size: 12px;
             cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s;
+            font-weight: 600;
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+            box-shadow: 0 2px 6px rgba(255, 69, 58, 0.22);
         }
         
         .reset-btn:hover {
-            background: #c82333;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(255, 69, 58, 0.26);
+        }
+        
+        .reset-btn:active {
+            transform: scale(0.98);
+            box-shadow: var(--shadow-press);
         }
         
         /* 移动端优化 */
@@ -659,30 +700,30 @@
                 
                 <div class="section-title">我方得分</div>
                 <div class="actions-grid">
-                    <button class="action-btn btn-primary" onclick="showShotModal(2)">2分球</button>
-                    <button class="action-btn btn-primary" onclick="showShotModal(3)">3分球</button>
-                    <button class="action-btn btn-primary" onclick="showFreeThrowModal()">罚球</button>
+                    <button class="action-btn btn-success" onclick="showShotModal(2)">2分球</button>
+                    <button class="action-btn btn-success" onclick="showShotModal(3)">3分球</button>
+                    <button class="action-btn btn-success" onclick="showFreeThrowModal()">罚球</button>
                 </div>
                 
                 <div class="section-title">其他数据</div>
                 <div class="actions-grid">
-                    <button class="action-btn btn-primary btn-small" onclick="showReboundModal('home')">篮板</button>
-                    <button class="action-btn btn-primary btn-small" onclick="recordStat('assist')">助攻</button>
-                    <button class="action-btn btn-primary btn-small" onclick="recordStat('steal')">抢断</button>
-                    <button class="action-btn btn-primary btn-small" onclick="recordStat('block')">盖帽</button>
-                    <button class="action-btn btn-primary btn-small" onclick="recordStat('turnover')">失误</button>
-                    <button class="action-btn btn-primary btn-small" onclick="recordStat('foul')">犯规</button>
+                    <button class="action-btn btn-warning btn-small" onclick="showReboundModal('home')">篮板</button>
+                    <button class="action-btn btn-warning btn-small" onclick="recordStat('assist')">助攻</button>
+                    <button class="action-btn btn-warning btn-small" onclick="recordStat('steal')">抢断</button>
+                    <button class="action-btn btn-warning btn-small" onclick="recordStat('block')">盖帽</button>
+                    <button class="action-btn btn-warning btn-small" onclick="recordStat('turnover')">失误</button>
+                    <button class="action-btn btn-warning btn-small" onclick="recordStat('foul')">犯规</button>
                     <button class="action-btn btn-substitution btn-small" id="substitution-btn" onclick="showSubstitutionModal()">换人</button>
                 </div>
                 
                 <div class="opponent-section">
                     <div class="section-title">菜鸟对手数据</div>
                     <div class="actions-grid">
-                        <button class="action-btn btn-primary" onclick="showOpponentShotModal(2)">对手2分</button>
-                        <button class="action-btn btn-primary" onclick="showOpponentShotModal(3)">对手3分</button>
-                        <button class="action-btn btn-primary" onclick="showOpponentFreeThrowModal()">对手罚球</button>
-                        <button class="action-btn btn-primary btn-small" onclick="showReboundModal('away')">对手篮板</button>
-                        <button class="action-btn btn-primary btn-small" onclick="recordOpponentStat('turnover')">对手失误</button>
+                        <button class="action-btn btn-danger" onclick="showOpponentShotModal(2)">对手2分</button>
+                        <button class="action-btn btn-danger" onclick="showOpponentShotModal(3)">对手3分</button>
+                        <button class="action-btn btn-danger" onclick="showOpponentFreeThrowModal()">对手罚球</button>
+                        <button class="action-btn btn-danger btn-small" onclick="showReboundModal('away')">对手篮板</button>
+                        <button class="action-btn btn-danger btn-small" onclick="recordOpponentStat('turnover')">对手失误</button>
                     </div>
                 </div>
                 
